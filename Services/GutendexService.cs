@@ -5,24 +5,27 @@ namespace BooksWorker.Services;
 
 public class GutendexService : IGutendexService
 {
-    private const string GUTENDEX_API_GET_ALL_BOOKS_ENDPOINT = "http://gutendex.com/books";
+    private const string GUTENDEX_API_GET_ALL_BOOKS_ENDPOINT = "https://gutendex.com/books/";
+    private readonly ILogger<GutendexService> _logger;
+    private readonly HttpClient _httpClient;
 
-    private readonly IHttpClientFactory _httpClientFactory;
-
-    public GutendexService(IHttpClientFactory httpClientFactory)
+    public GutendexService(ILogger<GutendexService> logger, HttpClient httpClient)
     {
-        _httpClientFactory = httpClientFactory;
+        _logger = logger;
+        _httpClient = httpClient;
     }
 
     public async Task<BooksResponse?> GetAllBooks(CancellationToken ct)
     {
-        HttpClient httpClient = _httpClientFactory.CreateClient("gutendex");
-        HttpResponseMessage response = await httpClient.GetAsync(GUTENDEX_API_GET_ALL_BOOKS_ENDPOINT, ct);
+        HttpResponseMessage response = await _httpClient.GetAsync(GUTENDEX_API_GET_ALL_BOOKS_ENDPOINT, ct);
         response.EnsureSuccessStatusCode();
 
         Stream payload = await response.Content.ReadAsStreamAsync(ct);
 
-        BooksResponse? result = await JsonSerializer.DeserializeAsync<BooksResponse>(payload, (JsonSerializerOptions?)null, ct);
+        BooksResponse? result = await JsonSerializer.DeserializeAsync<BooksResponse>(payload, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        }, ct);
         return result;
     }
 }
